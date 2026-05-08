@@ -1,0 +1,16 @@
+# Secretos y Configuración
+.env
+__pycache__/
+*.pyc
+
+# Base de Datos
+*.db
+*.sqlite3
+
+# Entornos virtuales
+venv/
+.venv/
+
+# Archivos de Sistema
+.DS_Store
+Thumbs.db
