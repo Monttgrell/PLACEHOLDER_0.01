@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 # Explicación: Importamos la librería sqlite3 que viene incluida en Python.
 # Nos permite conectarnos y manejar una base de datos SQLite (un archivo local).
@@ -8,8 +9,8 @@ def conectar_base_datos():
     Establece y devuelve una conexión a la base de datos local SQLite.
     """
     # Explicación: La función connect() abre el archivo de la base de datos.
-    # Si el archivo 'repositorio_soberano.db' no existe, SQLite lo creará automáticamente.
-    conexion = sqlite3.connect("repositorio_soberano.db")
+    # Si el archivo no existe, SQLite lo creará automáticamente en la carpeta 'data/'.
+    conexion = sqlite3.connect("data/repositorio_soberano.db")
     
     # Explicación: Devolvemos la conexión para que otras partes de nuestro programa 
     # (como el archivo main.py) puedan usarla.
@@ -19,6 +20,9 @@ def inicializar_base_datos():
     """
     Crea las tablas necesarias para nuestro repositorio soberano si es que aún no existen.
     """
+    # Explicación: Aseguramos que la carpeta 'data' exista para que Railway pueda montar su Volumen Persistente.
+    os.makedirs("data", exist_ok=True)
+    
     # Explicación: Usamos nuestra función para obtener la conexión a la base de datos.
     conexion = conectar_base_datos()
     

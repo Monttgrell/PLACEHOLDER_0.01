@@ -2,8 +2,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import datetime
 
-# Explicación: Importamos nuestros módulos.
-from . import database, models, ai_engine
+# Explicación: Importamos nuestros módulos como rutas absolutas locales, asumiendo 
+# que /backend será la carpeta raíz (Root Directory) en el servidor de Railway.
+import database
+import models
+import ai_engine
 
 app = FastAPI(title="Motor Central PLACEHOLDER", description="Backend del Repositorio Soberano")
 

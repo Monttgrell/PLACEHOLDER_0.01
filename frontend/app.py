@@ -5,6 +5,11 @@ import numpy as np
 from PIL import Image
 import datetime
 import time
+import os
+
+# Explicación: Definimos la URL base de la API. En Railway usará la variable de entorno,
+# pero en desarrollo local por defecto seguirá usando localhost:8000.
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 # Configuración inicial de la página
 st.set_page_config(page_title="PLACEHOLDER Gemelo Digital", page_icon="🧬", layout="wide")
@@ -45,7 +50,7 @@ with st.sidebar.expander("Crear Nuevo Perfil"):
         
         if submit_btn and nombre and rut:
             try:
-                res = requests.post("http://localhost:8000/nuevo_paciente", json={
+                res = requests.post(f"{API_URL}/nuevo_paciente", json={
                     "nombre": nombre,
                     "rut": rut,
                     "fecha_nacimiento": str(fecha_nac)
@@ -59,7 +64,7 @@ with st.sidebar.expander("Crear Nuevo Perfil"):
 
 pacientes_lista = []
 try:
-    res = requests.get("http://localhost:8000/pacientes")
+    res = requests.get(f"{API_URL}/pacientes")
     if res.status_code == 200:
         pacientes_lista = res.json()
 except:
@@ -83,7 +88,7 @@ paciente_activo_id = st.sidebar.selectbox(
 if paciente_activo_id:
     if st.sidebar.button("🗑️ Eliminar mi Perfil y Datos", type="primary"):
         try:
-            res = requests.delete(f"http://localhost:8000/eliminar_paciente/{paciente_activo_id}")
+            res = requests.delete(f"{API_URL}/eliminar_paciente/{paciente_activo_id}")
             if res.status_code == 200:
                 st.sidebar.success("Perfil eliminado exitosamente.")
                 st.session_state.autenticado = False
@@ -146,7 +151,7 @@ if st.session_state.autenticado:
                 with st.spinner("2️⃣ Estructurando datos en estándar FHIR y guardando en tu repositorio..."):
                     try:
                         res = requests.post(
-                            f"http://localhost:8000/procesar_documento/{paciente_activo_id}",
+                            f"{API_URL}/procesar_documento/{paciente_activo_id}",
                             json={"texto": texto_extraido}
                         )
                         if res.status_code == 200:
@@ -178,7 +183,7 @@ if st.session_state.autenticado:
             
             if btn_signos:
                 try:
-                    res = requests.post(f"http://localhost:8000/registrar_signos/{paciente_activo_id}", json={
+                    res = requests.post(f"{API_URL}/registrar_signos/{paciente_activo_id}", json={
                         "peso": peso,
                         "altura": altura,
                         "ritmo_cardiaco": ritmo,
@@ -200,7 +205,7 @@ if st.session_state.autenticado:
         if st.button("🔄 Cargar Historial"):
             with st.spinner("Cargando tu repositorio..."):
                 try:
-                    res = requests.get(f"http://localhost:8000/historial/{paciente_activo_id}")
+                    res = requests.get(f"{API_URL}/historial/{paciente_activo_id}")
                     if res.status_code == 200:
                         historial = res.json()
                         if historial:
@@ -221,7 +226,7 @@ if st.session_state.autenticado:
         if st.button("Generar Análisis Completo", type="primary"):
             with st.spinner("Analizando tus datos vitales y proyectando escenarios de salud..."):
                 try:
-                    res = requests.get(f"http://localhost:8000/proyecciones/{paciente_activo_id}")
+                    res = requests.get(f"{API_URL}/proyecciones/{paciente_activo_id}")
                     if res.status_code == 200:
                         datos = res.json()
                         st.success("Análisis completado exitosamente.")
