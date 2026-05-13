@@ -1,7 +1,5 @@
 import streamlit as st
 import requests
-import easyocr
-import numpy as np
 from PIL import Image
 import datetime
 import time
@@ -18,11 +16,39 @@ st.set_page_config(page_title="PLACEHOLDER Gemelo Digital", page_icon="🧬", la
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
 
-@st.cache_resource
-def cargar_lector_ocr():
-    return easyocr.Reader(['es'], gpu=False, download_enabled=True)
-
-lector_ocr = cargar_lector_ocr()
+def analizar_con_ocr_api(imagen_subida):
+    """
+    Función que envía la imagen a la API externa de OCR.space para extraer el texto,
+    ahorrando mucha memoria RAM en nuestro servidor.
+    """
+    api_key = os.getenv("OCR_API_KEY", "helloworld")
+    url = "https://api.ocr.space/parse/image"
+    
+    payload = {
+        'apikey': api_key,
+        'language': 'spa',
+        'detectOrientation': 'true'
+    }
+    
+    # Streamlit nos da un objeto con el contenido y nombre del archivo
+    archivos = {
+        'file': (imagen_subida.name, imagen_subida.getvalue(), imagen_subida.type)
+    }
+    
+    respuesta = requests.post(url, data=payload, files=archivos)
+    respuesta.raise_for_status() # Lanza error si falla la conexión
+    
+    datos = respuesta.json()
+    
+    if datos.get("IsErroredOnProcessing"):
+        errores = datos.get("ErrorMessage", ["Error desconocido"])
+        raise Exception(f"Error de procesamiento en la API: {errores}")
+        
+    texto_extraido = ""
+    for resultado in datos.get("ParsedResults", []):
+        texto_extraido += resultado.get("ParsedText", "") + " "
+        
+    return texto_extraido.strip()
 
 st.title("🧬 PLACEHOLDER: Infraestructura de Salud Soberana")
 st.markdown("*Empoderando al ciudadano mediante un Gemelo Digital y control total de sus datos.*")
@@ -140,28 +166,32 @@ if st.session_state.autenticado:
             st.image(imagen_subida, caption="Documento subido a tu dispositivo", width=400)
             
             if st.button("Analizar Documento con IA", type="primary"):
-                with st.spinner("1️⃣ Leyendo la imagen (esto puede tardar unos segundos)..."):
-                    imagen_pil = Image.open(imagen_subida)
-                    imagen_np = np.array(imagen_pil)
-                    resultados_ocr = lector_ocr.readtext(imagen_np)
-                    texto_extraido = " ".join([resultado[1] for resultado in resultados_ocr])
+                try:
+                    with st.spinner("1️⃣ Leyendo la imagen mediante API de OCR..."):
+                        # Explicación: Reemplazamos la pesada carga de procesamiento local
+                        # por una llamada ligera a una API externa.
+                        texto_extraido = analizar_con_ocr_api(imagen_subida)
+                        
+                    st.info(f"**Texto extraído (Pre-visualización):** {texto_extraido[:300]}...")
                     
-                st.info(f"**Texto extraído (Pre-visualización):** {texto_extraido[:300]}...")
-                
-                with st.spinner("2️⃣ Estructurando datos en estándar FHIR y guardando en tu repositorio..."):
-                    try:
-                        res = requests.post(
-                            f"{API_URL}/procesar_documento/{paciente_activo_id}",
-                            json={"texto": texto_extraido}
-                        )
-                        if res.status_code == 200:
-                            st.success("✅ ¡Éxito! Documento encriptado y guardado.")
-                            with st.expander("Ver JSON FHIR generado por DeepSeek"):
-                                st.json(res.json()["fhir"])
-                        else:
-                            st.error("Error al guardar en el servidor.")
-                    except:
-                        st.error("🚨 Error de red con FastAPI.")
+                    with st.spinner("2️⃣ Estructurando datos en estándar FHIR y guardando en tu repositorio..."):
+                        try:
+                            res = requests.post(
+                                f"{API_URL}/procesar_documento/{paciente_activo_id}",
+                                json={"texto": texto_extraido}
+                            )
+                            if res.status_code == 200:
+                                st.success("✅ ¡Éxito! Documento encriptado y guardado.")
+                                with st.expander("Ver JSON FHIR generado por DeepSeek"):
+                                    st.json(res.json()["fhir"])
+                            else:
+                                st.error("Error al guardar en el servidor.")
+                        except:
+                            st.error("🚨 Error de red con FastAPI.")
+                except Exception as e:
+                    # Explicación: Si la API de OCR falla (límite de uso, sin internet), 
+                    # atajamos el error aquí sin que la aplicación de Streamlit se cuelgue.
+                    st.error(f"🚨 Ocurrió un problema al leer la imagen: {e}")
     
     # --- PESTAÑA 2: SIGNOS VITALES ---
     with tab2:
