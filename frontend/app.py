@@ -20,7 +20,7 @@ if 'autenticado' not in st.session_state:
 
 @st.cache_resource
 def cargar_lector_ocr():
-    return easyocr.Reader(['es']) 
+    return easyocr.Reader(['es'], gpu=False, download_enabled=True)
 
 lector_ocr = cargar_lector_ocr()
 
