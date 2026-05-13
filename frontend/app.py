@@ -67,7 +67,7 @@ try:
     res = requests.get(f"{API_URL}/pacientes")
     if res.status_code == 200:
         pacientes_lista = res.json()
-except:
+except Exception as e:
     st.sidebar.error(f"🚨 Servidor FastAPI apagado. Por favor, inícialo, ERROR {e}.")
 
 st.sidebar.markdown("### Selecciona tu Paciente Activo:")
